@@ -1,45 +1,84 @@
-from flask import Flask, request, render_template
+from flask import Flask, render_template, request
 import pickle
-import numpy as np
+import pandas as pd
+
+def add_weighted_score(df):
+    weights = {
+        "CGPA": 0.4,
+        "Communication_Skills": 0.3,
+        "Projects_Completed": 0.2,
+        "Internship_Experience": 0.1
+    }
+    df["Weighted_Score"] = (
+        df["CGPA"] * weights["CGPA"] +
+        df["Communication_Skills"] * weights["Communication_Skills"] +
+        df["Projects_Completed"] * weights["Projects_Completed"] +
+        df["Internship_Experience"] * weights["Internship_Experience"]
+    )
+    return df
+
+# def add_weighted_score(df):
+#     df["Weighted_Score"] = (
+#         df["IQ"] * 0.2 +
+#         df["Prev_Sem_Result"] * 0.1 +
+#         df["CGPA"] * 0.25 +
+#         df["Academic_Performance"] * 0.15 +
+#         df["Extra_Curricular_Score"] * 0.1 +
+#         df["Communication_Skills"] * 0.15 +
+#         df["Projects_Completed"] * 0.05
+#     )
+#     return df
+
+
+# Load trained pipeline
+with open("logistic_regression.pkl", "rb") as f:
+    pipeline = pickle.load(f)
 
 app = Flask(__name__)
 
-# Load trained pipeline (Scaler + LogisticRegression)
-with open("logistic_pipeline.pkl", "rb") as f:
-    pipeline = pickle.load(f)
-
-@app.route('/')
+@app.route("/")
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
-    try:
-        # Collect input values in correct order
-        iq = float(request.form['IQ'])
-        prev_sem = float(request.form['Prev_Sem_Result'])
-        cgpa = float(request.form['CGPA'])
-        academic_perf = int(request.form['Academic_Performance'])
-        internship = int(request.form['Internship_Experience'])  # 1 for Yes, 0 for No
-        extra_curr = int(request.form['Extra_Curricular_Score'])
-        comm_skills = int(request.form['Communication_Skills'])
-        projects = int(request.form['Projects_Completed'])
+    if request.method == "POST":
+        try:
+            # Get values from form
+            iq = float(request.form["iq"])
+            prev_sem = float(request.form["prev_sem"])
+            cgpa = float(request.form["cgpa"])
+            academic_perf = float(request.form["academic_perf"])
+            internship = int(request.form["internship"])
+            extra_curricular = float(request.form["extra_curricular"])
+            communication = float(request.form["communication"])
+            projects = int(request.form["projects"])
 
-        # Make prediction
-        features = np.array([[iq, prev_sem, cgpa, academic_perf,
-                              internship, extra_curr, comm_skills, projects]])
-        
-        prediction = pipeline.predict(features)[0]
-        probability = pipeline.predict_proba(features)[0][1] * 100  # probability of being placed
+            # Create dataframe
+            student = pd.DataFrame([{
+                "IQ": iq,
+                "Prev_Sem_Result": prev_sem,
+                "CGPA": cgpa,
+                "Academic_Performance": academic_perf,
+                "Internship_Experience": internship,
+                "Extra_Curricular_Score": extra_curricular,
+                "Communication_Skills": communication,
+                "Projects_Completed": projects
+            }])
 
-        result = "Placed 🎉" if prediction == 1 else "Not Placed 😞"
+            # Predict using pipeline
+            prediction = pipeline.predict(student)[0]
+            probability = pipeline.predict_proba(student)[0][1] * 100
 
-        return render_template('index.html',
-                               prediction_text=f'Prediction: {result}',
-                               probability_text=f'Chance of Placement: {probability:.2f}%')
+            result = "Placed ✅" if prediction == 1 else "Not Placed ❌"
 
-    except Exception as e:
-        return render_template('index.html', prediction_text=f'Error: {str(e)}')
+            return render_template(
+                "index.html",
+                prediction_text=f"Prediction: {result} (Probability: {probability:.2f}%)"
+            )
+
+        except Exception as e:
+            return render_template("index.html", prediction_text=f"Error: {str(e)}")
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -20,10 +20,10 @@ This repository contains all the resources we used throughout the sessions, incl
 
 | Topic | Notebook | Link |
 | --- | --- | --- |
-| Numpy, Pandas and Matplotlib | Basics libraries for ML | [View]() |
-| Exploratory Data Analysis (EDA) | Clean data and feature engineering | [View]("https://www.kaggle.com/code/vrajesh0sharma7/session-2-eda/notebook") |
-| Linear Regression | First ML model | [View]() |
-| Logistic Regression | Binary classification | [View]() |
+| Numpy, Pandas and Matplotlib | Basics libraries for ML | [View](YOUR_LINK_HERE) |
+| Exploratory Data Analysis (EDA) | Clean data and feature engineering | [View](https://www.kaggle.com/code/vrajesh0sharma7/session-2-eda/notebook) |
+| Linear Regression | First ML model | [View](YOUR_LINK_HERE) |
+| Logistic Regression | Binary classification | [View](YOUR_LINK_HERE) |
 
 ---
 

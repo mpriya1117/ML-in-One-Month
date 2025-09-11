@@ -9,6 +9,7 @@ def add_weighted_score(df):
         "Projects_Completed": 0.2,
         "Internship_Experience": 0.1
     }
+    df = df.copy()
     df["Weighted_Score"] = (
         df["CGPA"] * weights["CGPA"] +
         df["Communication_Skills"] * weights["Communication_Skills"] +
@@ -17,22 +18,8 @@ def add_weighted_score(df):
     )
     return df
 
-# def add_weighted_score(df):
-#     df["Weighted_Score"] = (
-#         df["IQ"] * 0.2 +
-#         df["Prev_Sem_Result"] * 0.1 +
-#         df["CGPA"] * 0.25 +
-#         df["Academic_Performance"] * 0.15 +
-#         df["Extra_Curricular_Score"] * 0.1 +
-#         df["Communication_Skills"] * 0.15 +
-#         df["Projects_Completed"] * 0.05
-#     )
-#     return df
-
-
-# Load trained pipeline
 with open("logistic_regression.pkl", "rb") as f:
-    pipeline = pickle.load(f)
+    model = pickle.load(f)
 
 app = Flask(__name__)
 
@@ -42,43 +29,43 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if request.method == "POST":
-        try:
-            # Get values from form
-            iq = float(request.form["iq"])
-            prev_sem = float(request.form["prev_sem"])
-            cgpa = float(request.form["cgpa"])
-            academic_perf = float(request.form["academic_perf"])
-            internship = int(request.form["internship"])
-            extra_curricular = float(request.form["extra_curricular"])
-            communication = float(request.form["communication"])
-            projects = int(request.form["projects"])
+    try:
+        iq = float(request.form["iq"])
+        prev_sem = float(request.form["prev_sem"])
+        cgpa = float(request.form["cgpa"])
+        academic_perf = float(request.form["academic_perf"])
+        internship = int(request.form["internship"])
+        extra_curricular = float(request.form["extra_curricular"])
+        communication = float(request.form["communication"])
+        projects = int(request.form["projects"])
 
-            # Create dataframe
-            student = pd.DataFrame([{
-                "IQ": iq,
-                "Prev_Sem_Result": prev_sem,
-                "CGPA": cgpa,
-                "Academic_Performance": academic_perf,
-                "Internship_Experience": internship,
-                "Extra_Curricular_Score": extra_curricular,
-                "Communication_Skills": communication,
-                "Projects_Completed": projects
-            }])
+        student = pd.DataFrame([{
+            "IQ": iq,
+            "Prev_Sem_Result": prev_sem,
+            "CGPA": cgpa,
+            "Academic_Performance": academic_perf,
+            "Internship_Experience": internship,
+            "Extra_Curricular_Score": extra_curricular,
+            "Communication_Skills": communication,
+            "Projects_Completed": projects
+        }])
 
-            # Predict using pipeline
-            prediction = pipeline.predict(student)[0]
-            probability = pipeline.predict_proba(student)[0][1] * 100
+        # Apply feature engineering
+        student = add_weighted_score(student)
 
-            result = "Placed ✅" if prediction == 1 else "Not Placed ❌"
+        # Predict
+        prediction = model.predict(student)[0]
+        probability = model.predict_proba(student)[0][1] * 100
 
-            return render_template(
-                "index.html",
-                prediction_text=f"Prediction: {result} (Probability: {probability:.2f}%)"
-            )
+        result = "Placed ✅" if prediction == 1 else "Not Placed ❌"
 
-        except Exception as e:
-            return render_template("index.html", prediction_text=f"Error: {str(e)}")
+        return render_template(
+            "index.html",
+            prediction_text=f"Prediction: {result} (Probability: {probability:.2f}%)"
+        )
+
+    except Exception as e:
+        return render_template("index.html", prediction_text=f"Error: {str(e)}")
 
 if __name__ == "__main__":
     app.run(debug=True)
